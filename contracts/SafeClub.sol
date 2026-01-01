@@ -216,10 +216,7 @@ contract SafeClub is Ownable, ReentrancyGuard {
         if (deadline <= block.timestamp) {
             revert InvalidDeadline();
         }
-        // Recommended: ensure proposal amount doesn't exceed balance
-        if (amount > address(this).balance) {
-            revert InsufficientBalance();
-        }
+        // Note: Balance check moved to execution time to allow proposing amounts larger than current balance
 
         uint256 proposalId = proposalCount;
         uint256 membersSnapshot = _members.length();

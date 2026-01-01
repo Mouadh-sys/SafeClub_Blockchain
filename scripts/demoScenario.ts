@@ -73,12 +73,12 @@ async function main() {
   const proposalAmount = ethers.parseEther("2.5");
   const description = "Purchase equipment for club activities";
   const votingPeriod = 7 * 24 * 60 * 60; // 7 days
-  const deadline = (await time.latest()) + BigInt(votingPeriod);
+  const deadline = Number(await time.latest()) + votingPeriod;
 
   tx = await safeClub
     .connect(member1)
     .createProposal(proposalAmount, recipient.address, description, deadline);
-  const receipt = await tx.wait();
+  let receipt = await tx.wait();
 
   // Extract proposal ID from event
   const proposalCreatedEvent = receipt?.logs.find(
@@ -139,7 +139,7 @@ async function main() {
   console.log("6. Advancing time past deadline...");
   const currentTime = await time.latest();
   console.log("   Current time:", new Date(Number(currentTime) * 1000).toLocaleString());
-  await time.increaseTo(deadline + 1n);
+  await time.increaseTo(deadline + 1);
   const newTime = await time.latest();
   console.log("   New time:", new Date(Number(newTime) * 1000).toLocaleString());
   console.log("   ✓ Time advanced");
@@ -192,3 +192,5 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+

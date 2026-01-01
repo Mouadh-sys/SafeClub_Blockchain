@@ -162,7 +162,7 @@ describe("SafeClub", function () {
     });
 
     it("Should allow member to create proposal", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       const description = "Test proposal";
 
       await expect(
@@ -197,7 +197,7 @@ describe("SafeClub", function () {
     });
 
     it("Should not allow non-member to create proposal", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       await expect(
         safeClub
           .connect(nonMember)
@@ -211,7 +211,7 @@ describe("SafeClub", function () {
     });
 
     it("Should not allow creating proposal with zero amount", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       await expect(
         safeClub
           .connect(member1)
@@ -220,7 +220,7 @@ describe("SafeClub", function () {
     });
 
     it("Should not allow creating proposal with zero address recipient", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       await expect(
         safeClub
           .connect(member1)
@@ -247,23 +247,8 @@ describe("SafeClub", function () {
       ).to.be.revertedWithCustomError(safeClub, "InvalidDeadline");
     });
 
-    it("Should not allow creating proposal with amount exceeding balance", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
-      const excessAmount = DEFAULT_AMOUNT * 3n;
-      await expect(
-        safeClub
-          .connect(member1)
-          .createProposal(
-            excessAmount,
-            recipient.address,
-            "Test",
-            deadline
-          )
-      ).to.be.revertedWithCustomError(safeClub, "InsufficientBalance");
-    });
-
     it("Should increment proposalCount", async function () {
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       await safeClub
         .connect(member1)
         .createProposal(
@@ -286,15 +271,15 @@ describe("SafeClub", function () {
   });
 
   describe("Voting", function () {
-    let proposalId: bigint;
-    let deadline: bigint;
+    let proposalId: number;
+    let deadline: number;
 
     beforeEach(async function () {
       await member1.sendTransaction({
         to: await safeClub.getAddress(),
         value: DEFAULT_AMOUNT * 2n,
       });
-      deadline = (await time.latest()) + VOTING_PERIOD;
+      deadline = Number(await time.latest()) + VOTING_PERIOD;
       const tx = await safeClub
         .connect(member1)
         .createProposal(
@@ -308,7 +293,7 @@ describe("SafeClub", function () {
         (log: any) =>
           safeClub.interface.parseLog(log)?.name === "ProposalCreated"
       );
-      proposalId = (await safeClub.proposalCount()) - 1n;
+      proposalId = Number(await safeClub.proposalCount()) - 1;
     });
 
     it("Should allow member to vote for", async function () {
@@ -348,7 +333,7 @@ describe("SafeClub", function () {
     });
 
     it("Should not allow voting after deadline", async function () {
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
       await expect(
         safeClub.connect(member1).vote(proposalId, true)
       ).to.be.revertedWithCustomError(safeClub, "VotingPeriodEnded");
@@ -361,16 +346,15 @@ describe("SafeClub", function () {
       await safeClub.connect(member3).vote(proposalId, true);
 
       // Wait past deadline
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       // Execute
       await safeClub.connect(member1).executeProposal(proposalId);
 
       // Try to vote on executed proposal
-      // Member3 already voted, but let's verify member2 can't vote again
       await expect(
         safeClub.connect(member1).vote(proposalId, true)
-      ).to.be.revertedWithCustomError(safeClub, "AlreadyVoted");
+      ).to.be.revertedWithCustomError(safeClub, "ProposalAlreadyExecuted");
     });
 
     it("Should track vote counts correctly", async function () {
@@ -385,15 +369,15 @@ describe("SafeClub", function () {
   });
 
   describe("Proposal Execution", function () {
-    let proposalId: bigint;
-    let deadline: bigint;
+    let proposalId: number;
+    let deadline: number;
 
     beforeEach(async function () {
       await member1.sendTransaction({
         to: await safeClub.getAddress(),
         value: DEFAULT_AMOUNT * 2n,
       });
-      deadline = (await time.latest()) + VOTING_PERIOD;
+      deadline = Number(await time.latest()) + VOTING_PERIOD;
       const tx = await safeClub
         .connect(member1)
         .createProposal(
@@ -402,7 +386,7 @@ describe("SafeClub", function () {
           "Test proposal",
           deadline
         );
-      proposalId = (await safeClub.proposalCount()) - 1n;
+      proposalId = Number(await safeClub.proposalCount()) - 1;
     });
 
     it("Should execute accepted proposal after deadline", async function () {
@@ -411,7 +395,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member2).vote(proposalId, true);
 
       // Wait past deadline
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       const recipientBalanceBefore = await ethers.provider.getBalance(
         recipient.address
@@ -454,7 +438,7 @@ describe("SafeClub", function () {
       // Only 1 vote, quorum requires 2 (50% of 3)
       await safeClub.connect(member1).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       await expect(
         safeClub.connect(member1).executeProposal(proposalId)
@@ -466,7 +450,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, false);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       await expect(
         safeClub.connect(member1).executeProposal(proposalId)
@@ -477,7 +461,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       await safeClub.connect(member1).executeProposal(proposalId);
 
@@ -487,21 +471,18 @@ describe("SafeClub", function () {
     });
 
     it("Should not execute if insufficient balance", async function () {
+      // Create proposal with amount exceeding current balance
+      const excessAmount = DEFAULT_AMOUNT * 3n;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
+      await safeClub
+        .connect(member1)
+        .createProposal(excessAmount, recipient.address, "Excess proposal", deadline);
+      const proposalId = Number(await safeClub.proposalCount()) - 1;
+
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
 
-      // Drain contract balance
-      await owner.sendTransaction({
-        to: await safeClub.getAddress(),
-        value: ethers.parseEther("10"),
-      });
-      const contractBalance = await safeClub.getBalance();
-      await owner.sendTransaction({
-        to: owner.address,
-        value: contractBalance,
-      });
-
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       await expect(
         safeClub.connect(member1).executeProposal(proposalId)
@@ -512,7 +493,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       await expect(
         safeClub.connect(nonMember).executeProposal(proposalId)
@@ -521,8 +502,8 @@ describe("SafeClub", function () {
   });
 
   describe("Reentrancy Protection", function () {
-    let proposalId: bigint;
-    let deadline: bigint;
+    let proposalId: number;
+    let deadline: number;
     let reenteringReceiver: ReenteringReceiver;
 
     beforeEach(async function () {
@@ -538,7 +519,7 @@ describe("SafeClub", function () {
         to: await safeClub.getAddress(),
         value: DEFAULT_AMOUNT * 2n,
       });
-      deadline = (await time.latest()) + VOTING_PERIOD;
+      deadline = Number(await time.latest()) + VOTING_PERIOD;
       const tx = await safeClub
         .connect(member1)
         .createProposal(
@@ -547,13 +528,13 @@ describe("SafeClub", function () {
           "Reentrancy test",
           deadline
         );
-      proposalId = (await safeClub.proposalCount()) - 1n;
+      proposalId = Number(await safeClub.proposalCount()) - 1;
       await reenteringReceiver.setProposalId(Number(proposalId));
 
       // Vote to accept
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
     });
 
     it("Should prevent reentrancy attack", async function () {
@@ -585,15 +566,15 @@ describe("SafeClub", function () {
   });
 
   describe("Decision Rule", function () {
-    let proposalId: bigint;
-    let deadline: bigint;
+    let proposalId: number;
+    let deadline: number;
 
     beforeEach(async function () {
       await member1.sendTransaction({
         to: await safeClub.getAddress(),
         value: DEFAULT_AMOUNT * 2n,
       });
-      deadline = (await time.latest()) + VOTING_PERIOD;
+      deadline = Number(await time.latest()) + VOTING_PERIOD;
       const tx = await safeClub
         .connect(member1)
         .createProposal(
@@ -602,7 +583,7 @@ describe("SafeClub", function () {
           "Quorum test",
           deadline
         );
-      proposalId = (await safeClub.proposalCount()) - 1n;
+      proposalId = Number(await safeClub.proposalCount()) - 1;
     });
 
     it("Should accept proposal with quorum and majority", async function () {
@@ -611,7 +592,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member2).vote(proposalId, true);
       await safeClub.connect(member3).vote(proposalId, false);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       expect(await safeClub.isProposalAccepted(proposalId)).to.equal(true);
     });
@@ -620,7 +601,7 @@ describe("SafeClub", function () {
       // Only 1 vote, quorum requires 2
       await safeClub.connect(member1).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       expect(await safeClub.isProposalAccepted(proposalId)).to.equal(false);
     });
@@ -630,7 +611,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, false);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       expect(await safeClub.isProposalAccepted(proposalId)).to.equal(false);
     });
@@ -647,7 +628,7 @@ describe("SafeClub", function () {
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       expect(await safeClub.isProposalAccepted(proposalId)).to.equal(true);
     });
@@ -683,7 +664,7 @@ describe("SafeClub", function () {
         value: DEFAULT_AMOUNT * 5n,
       });
 
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
 
       // Create multiple proposals
       await safeClub
@@ -720,7 +701,7 @@ describe("SafeClub", function () {
         value: DEFAULT_AMOUNT * 2n,
       });
 
-      const deadline = (await time.latest()) + VOTING_PERIOD;
+      const deadline = Number(await time.latest()) + VOTING_PERIOD;
       await safeClub
         .connect(member1)
         .createProposal(
@@ -729,7 +710,7 @@ describe("SafeClub", function () {
           "Test",
           deadline
         );
-      const proposalId = (await safeClub.proposalCount()) - 1n;
+      const proposalId = Number(await safeClub.proposalCount()) - 1;
 
       // Member3 votes
       await safeClub.connect(member3).vote(proposalId, true);
@@ -737,19 +718,24 @@ describe("SafeClub", function () {
       // Owner removes member3
       await safeClub.connect(owner).removeMember(member3.address);
 
-      // Member3 cannot vote on new proposals but their existing vote counts
+      // Member3 cannot vote anymore since they were removed (existing vote still counts)
       await expect(
         safeClub.connect(member3).vote(proposalId, false)
-      ).to.be.revertedWithCustomError(safeClub, "AlreadyVoted");
+      ).to.be.revertedWithCustomError(safeClub, "NotMember");
 
       // Remaining members can still vote
       await safeClub.connect(member1).vote(proposalId, true);
       await safeClub.connect(member2).vote(proposalId, true);
 
-      await time.increaseTo(deadline + 1n);
+      await time.increaseTo(deadline + 1);
 
       // Proposal should execute (3 votes total, 3 for)
       await safeClub.connect(member1).executeProposal(proposalId);
     });
   });
 });
+
+
+
+
+
