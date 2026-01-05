@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeClub - Decentralized Treasury Governance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        // Fallback if first CDN fails
+        if (typeof ethers === 'undefined') {
+            document.write('<script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --success-dark: #059669;
+            --warning: #f59e0b;
+            --warning-dark: #d97706;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --info: #06b6d4;
+            --dark: #1f2937;
+            --gray-600: #4b5563;
+            --gray-400: #9ca3af;
+            --gray-200: #e5e7eb;
+            --gray-100: #f3f4f6;
+            --white: #ffffff;
+            --shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+            --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --radius-lg: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+            animation: gradientFlow 20s ease infinite;
+            background-size: 300% 300%;
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .header h1 {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 3rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+        }
+
+        .header .subtitle {
+            color: var(--gray-600);
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+
+        /* Connection Panel */
+        .connection-panel {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            color: white;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .connection-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .connection-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .status-item.connected {
+            background: rgba(16, 185, 129, 0.3);
+        }
+
+        .connection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .connection-info h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .connection-info .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+        }
+
+        .connection-info .balance {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .connection-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: var(--gray-400);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        button.btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        button.btn-success {
+            background: linear-gradient(135deg, var(--success), var(--success-dark));
+        }
+
+        button.btn-danger {
+            background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+        }
+
+        button.btn-warning {
+            background: linear-gradient(135deg, var(--warning), var(--warning-dark));
+        }
+
+        button.btn-info {
+            background: linear-gradient(135deg, var(--info), #0891b2);
+        }
+
+        /* Messages */
+        .message {
+            padding: 16px 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .message.show {
+            display: flex;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #991b1b;
+            border-left: 4px solid var(--danger);
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            color: #166534;
+            border-left: 4px solid var(--success);
+        }
+
+        .message.info {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1e40af;
+            border-left: 4px solid var(--info);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            background: var(--gray-100);
+            padding: 8px;
+            border-radius: var(--radius);
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-600);
+            transition: all 0.3s ease;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .tab:hover {
+            background: white;
+            color: var(--primary);
+            transform: none;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Sections */
+        .section {
+            background: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            border: 1px solid var(--gray-200);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section h2 {
+            color: var(--dark);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 .icon {
+            font-size: 1.5rem;
+        }
+
+        /* Grid layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        label .hint {
+            font-weight: 400;
+            color: var(--gray-400);
+            font-size: 0.85rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--dark);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .input-with-btn {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-with-btn input {
+            flex: 1;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 25px;
+            border: 1px solid var(--gray-200);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-sm);
+            border-color: var(--primary-light);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--gray-100), white);
+            padding: 25px;
+            border-radius: var(--radius);
+            text-align: center;
+            border: 1px solid var(--gray-200);
+        }
+
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Proposal Cards */
+        .proposal-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 25px;
+            border: 1px solid var(--gray-200);
+            border-left: 5px solid var(--primary);
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .proposal-card:hover {
+            box-shadow: var(--shadow-sm);
+            transform: translateX(5px);
+        }
+
+        .proposal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .proposal-id {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .proposal-badge {
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-active {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+        }
+
+        .badge-ended {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #92400e;
+        }
+
+        .badge-executed {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e40af;
+        }
+
+        .badge-rejected {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            color: #991b1b;
+        }
+
+        .proposal-description {
+            font-size: 1.1rem;
+            color: var(--dark);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .proposal-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            background: var(--gray-100);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+        }
+
+        .detail-item .label {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-item .value {
+            font-weight: 600;
+            color: var(--dark);
+            word-break: break-all;
+        }
+
+        .detail-item .value.mono {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .votes-display {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .vote-box {
+            flex: 1;
+            padding: 20px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .vote-box.for {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border: 2px solid var(--success);
+        }
+
+        .vote-box.against {
+            background: linear-gradient(135deg, #fee2e2, #fecaca);
+            border: 2px solid var(--danger);
+        }
+
+        .vote-box .label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .vote-box .count {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .vote-box.for .label, .vote-box.for .count {
+            color: var(--success-dark);
+        }
+
+        .vote-box.against .label, .vote-box.against .count {
+            color: var(--danger-dark);
+        }
+
+        .proposal-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Members List */
+        .members-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .member-tag {
+            background: linear-gradient(135deg, var(--gray-100), white);
+            padding: 10px 16px;
+            border-radius: 50px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            border: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .member-tag .remove-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-shadow: none;
+        }
+
+        .member-tag .remove-btn:hover {
+            background: var(--danger-dark);
+            transform: scale(1.1);
+        }
+
+        /* Help Box */
+        .help-box {
+            background: linear-gradient(135deg, #fefce8, #fef9c3);
+            border: 2px solid var(--warning);
+            border-radius: var(--radius);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .help-box h3 {
+            color: #92400e;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .help-box .step {
+            background: white;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 10px;
+            border-left: 3px solid var(--warning);
+        }
+
+        .help-box code {
+            background: var(--gray-100);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-600);
+        }
+
+        .loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--gray-200);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-600);
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+            }
+
+            .connection-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .proposal-actions {
+                flex-direction: column;
+            }
+
+            .proposal-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">🛡️</div>
+            <h1>SafeClub</h1>
+            <p class="subtitle">Decentralized Treasury Governance Platform</p>
+        </div>
+
+        <!-- Connection Panel -->
+        <div class="connection-panel">
+            <div class="connection-content">
+                <div class="status-bar">
+                    <div class="status-item" id="networkStatus">🔴 Network Disconnected</div>
+                    <div class="status-item" id="walletStatus">🔴 Wallet Not Connected</div>
+                    <div class="status-item" id="contractStatus">🔴 Contract Not Set</div>
+                    <div class="status-item" id="memberStatus">🔴 Not a Member</div>
+                </div>
+                <div class="connection-grid">
+                    <div class="connection-info">
+                        <h3>Your Address</h3>
+                        <div class="value" id="userAddress">Not connected</div>
+                    </div>
+                    <div class="connection-info">
+                        <h3>Contract Address</h3>
+                        <div class="value" id="contractAddressDisplay">Not configured</div>
+                    </div>
+                    <div class="connection-info">
+                        <h3>Treasury Balance</h3>
+                        <div class="value balance" id="contractBalance">0 ETH</div>
+                    </div>
+                </div>
+                <div class="connection-buttons">
+                    <button id="connectBtn" onclick="connectWallet()">🔗 Connect MetaMask</button>
+                    <button class="btn-secondary" onclick="refreshData()">🔄 Refresh</button>
+                    <button class="btn-secondary" onclick="toggleHelp()">❓ Help</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="errorMessage" class="message error"></div>
+        <div id="successMessage" class="message success"></div>
+        <div id="infoMessage" class="message info"></div>
+
+        <!-- Help Box -->
+        <div class="help-box" id="helpBox" style="display: none;">
+            <h3>📚 Quick Setup Guide</h3>
+            <div class="step"><strong>Step 1:</strong> Start Hardhat node: <code>npx hardhat node</code></div>
+            <div class="step"><strong>Step 2:</strong> Deploy contract: <code>npx hardhat run scripts/deploy.ts --network localhost</code></div>
+            <div class="step"><strong>Step 3:</strong> Add Hardhat network to MetaMask (Chain ID: 1337, RPC: http://127.0.0.1:8545)</div>
+            <div class="step"><strong>Step 4:</strong> Import a test account private key from Hardhat into MetaMask</div>
+            <div class="step"><strong>Step 5:</strong> Connect MetaMask and set the deployed contract address below</div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="tab" onclick="showTab('proposals')">📋 Proposals</button>
+            <button class="tab" onclick="showTab('members')">👥 Members</button>
+            <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div class="tab-content active" id="dashboard-tab">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">Total Proposals</div>
+                    <div class="value" id="totalProposals">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Active Proposals</div>
+                    <div class="value" id="activeProposals">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Total Members</div>
+                    <div class="value" id="totalMembers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Quorum</div>
+                    <div class="value" id="quorumDisplay">50%</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="section">
+                    <h2><span class="icon">💰</span> Deposit Funds</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 20px;">
+                        Add ETH to the treasury to fund proposals.
+                    </p>
+                    <div class="form-group">
+                        <label>Amount (ETH)</label>
+                        <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="10">
+                    </div>
+                    <button class="btn-success" onclick="depositFunds()">💳 Deposit ETH</button>
+                </div>
+
+                <div class="section">
+                    <h2><span class="icon">📝</span> Create Proposal</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 20px;">
+                        Propose a new expense for the club treasury.
+                    </p>
+                    <form id="createProposalForm" onsubmit="createProposal(event)">
+                        <div class="form-group">
+                            <label>Amount (ETH)</label>
+                            <input type="number" id="proposalAmount" step="0.001" min="0.001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Recipient Address</label>
+                            <input type="text" id="proposalRecipient" placeholder="0x..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="proposalDescription" placeholder="Describe the purpose of this expense..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Voting Period (minutes)</label>
+                            <input type="number" id="proposalDeadline" min="1" max="43200" value="5" required>
+                        </div>
+                        <button type="submit">📤 Create Proposal</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proposals Tab -->
+        <div class="tab-content" id="proposals-tab">
+            <div class="section">
+                <h2><span class="icon">📋</span> All Proposals</h2>
+                <div id="proposalList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Connect wallet to view proposals
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Members Tab -->
+        <div class="tab-content" id="members-tab">
+            <div class="grid-2">
+                <div class="section">
+                    <h2><span class="icon">👥</span> Current Members</h2>
+                    <div id="membersList" class="members-list">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            Loading members...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="icon">➕</span> Add Member</h2>
+                    <p style="color: var(--gray-600); margin-bottom: 20px;">
+                        Only the owner can add new members.
+                    </p>
+                    <div class="form-group">
+                        <label>Member Address</label>
+                        <input type="text" id="newMemberAddress" placeholder="0x...">
+                    </div>
+                    <button class="btn-success" onclick="addMember()">➕ Add Member</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-content" id="settings-tab">
+            <div class="grid-2">
+                <div class="section">
+                    <h2><span class="icon">📍</span> Contract Configuration</h2>
+                    <div class="form-group">
+                        <label>
+                            Contract Address
+                            <span class="hint">(Copy from deployment terminal)</span>
+                        </label>
+                        <input type="text" id="contractAddressInput" value="0x5fbdb2315678afecb367f032d93f642f64180aa3" placeholder="0x5FbDB2315678afecb367f032d93F642f64180aa3">
+                    </div>
+                    <button onclick="setContractAddress()">💾 Set Contract Address</button>
+                </div>
+
+                <div class="section">
+                    <h2><span class="icon">⚙️</span> Governance Settings</h2>
+                    <div class="form-group">
+                        <label>Current Quorum</label>
+                        <div id="currentQuorum" style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">50%</div>
+                    </div>
+                    <div class="form-group">
+                        <label>New Quorum (%)</label>
+                        <input type="number" id="newQuorum" min="0" max="100" placeholder="50">
+                    </div>
+                    <button class="btn-warning" onclick="updateQuorum()">📝 Update Quorum</button>
+                    <p style="color: var(--gray-600); margin-top: 15px; font-size: 0.9rem;">
+                        ⚠️ Only the owner can change governance settings.
+                    </p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2><span class="icon">👑</span> Ownership</h2>
+                <div class="grid-2">
+                    <div>
+                        <div class="form-group">
+                            <label>Current Owner</label>
+                            <div id="currentOwner" style="font-family: 'Courier New', monospace; background: var(--gray-100); padding: 12px; border-radius: var(--radius-sm);">
+                                Loading...
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-group">
+                            <label>Transfer Ownership To</label>
+                            <input type="text" id="newOwnerAddress" placeholder="0x...">
+                        </div>
+                        <button class="btn-danger" onclick="transferOwnership()">🔄 Transfer Ownership</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract ABI
+        const SAFECLUB_ABI = [
+            "function owner() view returns (address)",
+            "function transferOwnership(address newOwner)",
+            "function addMember(address member)",
+            "function removeMember(address member)",
+            "function isMember(address member) view returns (bool)",
+            "function getMembers() view returns (address[])",
+            "function memberCount() view returns (uint256)",
+            "function createProposal(uint256 amount, address payable recipient, string calldata description, uint256 deadline) returns (uint256)",
+            "function proposals(uint256) view returns (uint256 id, address proposer, uint256 amount, address recipient, string description, uint256 deadline, uint256 forVotes, uint256 againstVotes, bool executed, uint256 membersSnapshot)",
+            "function proposalCount() view returns (uint256)",
+            "function getProposal(uint256 proposalId) view returns (tuple(uint256 id, address proposer, uint256 amount, address recipient, string description, uint256 deadline, uint256 forVotes, uint256 againstVotes, bool executed, uint256 membersSnapshot))",
+            "function vote(uint256 proposalId, bool support)",
+            "function hasVoted(uint256 proposalId, address voter) view returns (bool)",
+            "function executeProposal(uint256 proposalId)",
+            "function isProposalAccepted(uint256 proposalId) view returns (bool)",
+            "function quorumBps() view returns (uint256)",
+            "function setQuorumBps(uint256 newQuorumBps)",
+            "function requireSimpleMajority() view returns (bool)",
+            "function getBalance() view returns (uint256)",
+            "event MemberAdded(address indexed member)",
+            "event MemberRemoved(address indexed member)",
+            "event Deposit(address indexed from, uint256 amount)",
+            "event ProposalCreated(uint256 indexed proposalId, address indexed proposer, uint256 amount, address recipient, string description, uint256 deadline)",
+            "event VoteCast(uint256 indexed proposalId, address indexed voter, bool support, uint256 forVotes, uint256 againstVotes)",
+            "event ProposalExecuted(uint256 indexed proposalId, address indexed recipient, uint256 amount)",
+            "event QuorumUpdated(uint256 oldQuorumBps, uint256 newQuorumBps)"
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+        let userAddress;
+        let contractAddress;
+        let isOwner = false;
+        let isMember = false;
+
+        // Initialize on page load
+        window.addEventListener('load', async () => {
+            const savedAddress = localStorage.getItem('safeClubAddress');
+            if (savedAddress) {
+                document.getElementById('contractAddressInput').value = savedAddress;
+                contractAddress = savedAddress;
+                document.getElementById('contractAddressDisplay').textContent = shortenAddress(savedAddress);
+                updateStatus('contract', true);
+            }
+
+            if (window.ethereum) {
+                window.ethereum.on('accountsChanged', () => location.reload());
+                window.ethereum.on('chainChanged', () => location.reload());
+            }
+        });
+
+        // Tab Management
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+
+        function toggleHelp() {
+            const helpBox = document.getElementById('helpBox');
+            helpBox.style.display = helpBox.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Status Updates
+        function updateStatus(type, connected) {
+            const statusMap = {
+                network: { el: 'networkStatus', text: 'Network' },
+                wallet: { el: 'walletStatus', text: 'Wallet' },
+                contract: { el: 'contractStatus', text: 'Contract' },
+                member: { el: 'memberStatus', text: 'Member' }
+            };
+            
+            const status = statusMap[type];
+            const el = document.getElementById(status.el);
+            el.textContent = connected ? `🟢 ${status.text} OK` : `🔴 ${status.text}`;
+            el.classList.toggle('connected', connected);
+        }
+
+        // Messages
+        function showError(message) {
+            const el = document.getElementById('errorMessage');
+            el.textContent = '❌ ' + message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 6000);
+        }
+
+        function showSuccess(message) {
+            const el = document.getElementById('successMessage');
+            el.textContent = '✅ ' + message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 6000);
+        }
+
+        function showInfo(message) {
+            const el = document.getElementById('infoMessage');
+            el.textContent = 'ℹ️ ' + message;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 6000);
+        }
+
+        function clearMessages() {
+            document.querySelectorAll('.message').forEach(m => m.classList.remove('show'));
+        }
+
+        // Utility
+        function shortenAddress(address) {
+            if (!address) return '';
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        // Wallet Connection
+        async function connectWallet() {
+            try {
+                // Check if ethers is loaded
+                if (typeof ethers === 'undefined') {
+                    showError('Ethers library not loaded. Please refresh the page (Ctrl+F5) or check your internet connection.');
+                    return;
+                }
+
+                if (!window.ethereum) {
+                    showError('MetaMask is not installed. Please install MetaMask to continue.');
+                    return;
+                }
+
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                const network = await provider.getNetwork();
+                
+                if (network.chainId !== 1337) {
+                    showError('Please switch to Hardhat Local network (Chain ID: 1337)');
+                    updateStatus('network', false);
+                    return;
+                }
+
+                updateStatus('network', true);
+                
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                document.getElementById('userAddress').textContent = shortenAddress(userAddress);
+                document.getElementById('connectBtn').textContent = '✅ Connected';
+                document.getElementById('connectBtn').disabled = true;
+                
+                updateStatus('wallet', true);
+                showSuccess('Wallet connected successfully!');
+
+                if (contractAddress) {
+                    initContract();
+                    await refreshData();
+                }
+            } catch (error) {
+                showError('Connection failed: ' + error.message);
+                updateStatus('wallet', false);
+            }
+        }
+
+        // Contract Setup
+        function setContractAddress() {
+            const address = document.getElementById('contractAddressInput').value.trim();
+            
+            if (!address) {
+                showError('Please enter a contract address');
+                return;
+            }
+
+            if (!ethers.utils.isAddress(address)) {
+                showError('Invalid contract address');
+                return;
+            }
+
+            contractAddress = address;
+            localStorage.setItem('safeClubAddress', address);
+            document.getElementById('contractAddressDisplay').textContent = shortenAddress(address);
+            updateStatus('contract', true);
+
+            if (signer) {
+                initContract();
+                refreshData();
+            }
+
+            showSuccess('Contract address saved!');
+        }
+
+        function initContract() {
+            if (!contractAddress || !signer) return;
+            contract = new ethers.Contract(contractAddress, SAFECLUB_ABI, signer);
+        }
+
+        // Data Refresh
+        async function refreshData() {
+            if (!contract) {
+                showInfo('Please connect wallet and set contract address first');
+                return;
+            }
+
+            try {
+                clearMessages();
+                await Promise.all([
+                    updateBalance(),
+                    updateStats(),
+                    loadProposals(),
+                    loadMembers(),
+                    loadOwner(),
+                    checkMemberStatus()
+                ]);
+            } catch (error) {
+                showError('Error refreshing data: ' + error.message);
+            }
+        }
+
+        async function updateBalance() {
+            const balance = await contract.getBalance();
+            document.getElementById('contractBalance').textContent = 
+                parseFloat(ethers.utils.formatEther(balance)).toFixed(4) + ' ETH';
+        }
+
+        async function updateStats() {
+            const [proposalCount, memberCount, quorumBps] = await Promise.all([
+                contract.proposalCount(),
+                contract.memberCount(),
+                contract.quorumBps()
+            ]);
+
+            document.getElementById('totalProposals').textContent = proposalCount.toString();
+            document.getElementById('totalMembers').textContent = memberCount.toString();
+            
+            const quorumPercent = quorumBps.toNumber() / 100;
+            document.getElementById('quorumDisplay').textContent = quorumPercent + '%';
+            document.getElementById('currentQuorum').textContent = quorumPercent + '%';
+
+            // Count active proposals
+            let activeCount = 0;
+            const now = Math.floor(Date.now() / 1000);
+            for (let i = 0; i < proposalCount.toNumber(); i++) {
+                const proposal = await contract.proposals(i);
+                if (!proposal.executed && proposal.deadline.toNumber() > now) {
+                    activeCount++;
+                }
+            }
+            document.getElementById('activeProposals').textContent = activeCount;
+        }
+
+        async function checkMemberStatus() {
+            try {
+                isMember = await contract.isMember(userAddress);
+                const owner = await contract.owner();
+                isOwner = userAddress.toLowerCase() === owner.toLowerCase();
+                updateStatus('member', isMember || isOwner);
+            } catch (error) {
+                console.error('Error checking member status:', error);
+            }
+        }
+
+        async function loadOwner() {
+            try {
+                const owner = await contract.owner();
+                document.getElementById('currentOwner').textContent = owner;
+            } catch (error) {
+                console.error('Error loading owner:', error);
+            }
+        }
+
+        // Proposals
+        async function loadProposals() {
+            const proposalList = document.getElementById('proposalList');
+            
+            try {
+                const count = await contract.proposalCount();
+                
+                if (count.eq(0)) {
+                    proposalList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">📋</div>
+                            <h3>No Proposals Yet</h3>
+                            <p>Create the first proposal to get started!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                proposalList.innerHTML = '';
+                const now = Math.floor(Date.now() / 1000);
+
+                for (let i = count.toNumber() - 1; i >= 0; i--) {
+                    const proposal = await contract.proposals(i);
+                    const hasVoted = await contract.hasVoted(i, userAddress);
+                    let isAccepted = false;
+                    
+                    try {
+                        isAccepted = await contract.isProposalAccepted(i);
+                    } catch (e) {}
+
+                    const deadline = proposal.deadline.toNumber();
+                    const isActive = now < deadline;
+                    const isExecuted = proposal.executed;
+
+                    let badgeClass, badgeText;
+                    if (isExecuted) {
+                        badgeClass = 'badge-executed';
+                        badgeText = '✅ Executed';
+                    } else if (!isActive) {
+                        badgeClass = isAccepted ? 'badge-ended' : 'badge-rejected';
+                        badgeText = isAccepted ? '⏰ Ended - Accepted' : '❌ Ended - Rejected';
+                    } else {
+                        badgeClass = 'badge-active';
+                        badgeText = '🟢 Active';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = 'proposal-card';
+                    card.innerHTML = `
+                        <div class="proposal-header">
+                            <div class="proposal-id">Proposal #${i}</div>
+                            <div class="proposal-badge ${badgeClass}">${badgeText}</div>
+                        </div>
+                        <div class="proposal-description">${proposal.description}</div>
+                        <div class="proposal-details">
+                            <div class="detail-item">
+                                <div class="label">Amount</div>
+                                <div class="value">${parseFloat(ethers.utils.formatEther(proposal.amount)).toFixed(4)} ETH</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="label">Recipient</div>
+                                <div class="value mono">${shortenAddress(proposal.recipient)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="label">Proposer</div>
+                                <div class="value mono">${shortenAddress(proposal.proposer)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="label">Deadline</div>
+                                <div class="value">${new Date(deadline * 1000).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="votes-display">
+                            <div class="vote-box for">
+                                <div class="label">👍 For</div>
+                                <div class="count">${proposal.forVotes.toString()}</div>
+                            </div>
+                            <div class="vote-box against">
+                                <div class="label">👎 Against</div>
+                                <div class="count">${proposal.againstVotes.toString()}</div>
+                            </div>
+                        </div>
+                        <div class="proposal-actions" id="actions-${i}"></div>
+                    `;
+
+                    const actionsDiv = card.querySelector(`#actions-${i}`);
+
+                    if (isActive && !hasVoted && !isExecuted) {
+                        const voteForBtn = document.createElement('button');
+                        voteForBtn.className = 'btn-success';
+                        voteForBtn.innerHTML = '👍 Vote For';
+                        voteForBtn.onclick = () => voteOnProposal(i, true);
+                        
+                        const voteAgainstBtn = document.createElement('button');
+                        voteAgainstBtn.className = 'btn-danger';
+                        voteAgainstBtn.innerHTML = '👎 Vote Against';
+                        voteAgainstBtn.onclick = () => voteOnProposal(i, false);
+                        
+                        actionsDiv.appendChild(voteForBtn);
+                        actionsDiv.appendChild(voteAgainstBtn);
+                    } else if (hasVoted && isActive) {
+                        const votedInfo = document.createElement('span');
+                        votedInfo.style.color = 'var(--gray-600)';
+                        votedInfo.innerHTML = '✅ You have voted on this proposal';
+                        actionsDiv.appendChild(votedInfo);
+                    }
+
+                    if (!isActive && !isExecuted && isAccepted) {
+                        const executeBtn = document.createElement('button');
+                        executeBtn.className = 'btn-warning';
+                        executeBtn.innerHTML = '⚡ Execute Proposal';
+                        executeBtn.onclick = () => executeProposal(i);
+                        actionsDiv.appendChild(executeBtn);
+                    }
+
+                    proposalList.appendChild(card);
+                }
+            } catch (error) {
+                proposalList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">⚠️</div>
+                        <h3>Error Loading Proposals</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function createProposal(event) {
+            event.preventDefault();
+
+            if (!contract) {
+                showError('Please connect wallet and set contract address first');
+                return;
+            }
+
+            try {
+                const amount = document.getElementById('proposalAmount').value;
+                const recipient = document.getElementById('proposalRecipient').value;
+                const description = document.getElementById('proposalDescription').value;
+                const deadlineDays = document.getElementById('proposalDeadline').value;
+
+                if (!ethers.utils.isAddress(recipient)) {
+                    showError('Invalid recipient address');
+                    return;
+                }
+
+                const amountWei = ethers.utils.parseEther(amount);
+                const deadlineTimestamp = Math.floor(Date.now() / 1000) + (deadlineDays * 60); // Convert minutes to seconds
+
+                showInfo('Creating proposal... Please confirm in MetaMask');
+                const tx = await contract.createProposal(amountWei, recipient, description, deadlineTimestamp);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Proposal created successfully!');
+                document.getElementById('createProposalForm').reset();
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'creating proposal');
+            }
+        }
+
+        async function voteOnProposal(proposalId, support) {
+            if (!contract) return;
+
+            try {
+                const voteType = support ? 'FOR' : 'AGAINST';
+                showInfo(`Voting ${voteType}... Please confirm in MetaMask`);
+                
+                const tx = await contract.vote(proposalId, support);
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess(`Vote ${voteType} recorded successfully!`);
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'voting');
+            }
+        }
+
+        async function executeProposal(proposalId) {
+            if (!contract) return;
+
+            try {
+                showInfo('Executing proposal... Please confirm in MetaMask');
+                const tx = await contract.executeProposal(proposalId);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Proposal executed successfully! Funds have been transferred.');
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'executing proposal');
+            }
+        }
+
+        // Members
+        async function loadMembers() {
+            const membersList = document.getElementById('membersList');
+
+            try {
+                const members = await contract.getMembers();
+                const owner = await contract.owner();
+
+                if (members.length === 0) {
+                    membersList.innerHTML = `
+                        <div class="empty-state" style="padding: 20px;">
+                            <div class="icon">👥</div>
+                            <h3>No Members Yet</h3>
+                            <p>Add members to start the governance process.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                membersList.innerHTML = '';
+                members.forEach(member => {
+                    const tag = document.createElement('div');
+                    tag.className = 'member-tag';
+                    
+                    const isCurrentOwner = member.toLowerCase() === owner.toLowerCase();
+                    const isCurrentUser = member.toLowerCase() === userAddress?.toLowerCase();
+                    
+                    tag.innerHTML = `
+                        ${shortenAddress(member)}
+                        ${isCurrentOwner ? ' 👑' : ''}
+                        ${isCurrentUser ? ' (You)' : ''}
+                        ${isOwner && !isCurrentOwner ? `<button class="remove-btn" onclick="removeMember('${member}')" title="Remove member">×</button>` : ''}
+                    `;
+                    membersList.appendChild(tag);
+                });
+            } catch (error) {
+                membersList.innerHTML = `<p style="color: var(--danger);">Error loading members: ${error.message}</p>`;
+            }
+        }
+
+        async function addMember() {
+            if (!contract) {
+                showError('Please connect wallet and set contract address first');
+                return;
+            }
+
+            const address = document.getElementById('newMemberAddress').value.trim();
+            
+            if (!address || !ethers.utils.isAddress(address)) {
+                showError('Please enter a valid Ethereum address');
+                return;
+            }
+
+            try {
+                showInfo('Adding member... Please confirm in MetaMask');
+                const tx = await contract.addMember(address);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Member added successfully!');
+                document.getElementById('newMemberAddress').value = '';
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'adding member');
+            }
+        }
+
+        async function removeMember(address) {
+            if (!contract) return;
+
+            if (!confirm(`Are you sure you want to remove ${shortenAddress(address)} from members?`)) {
+                return;
+            }
+
+            try {
+                showInfo('Removing member... Please confirm in MetaMask');
+                const tx = await contract.removeMember(address);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Member removed successfully!');
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'removing member');
+            }
+        }
+
+        // Treasury
+        async function depositFunds() {
+            if (!contract || !signer) {
+                showError('Please connect wallet and set contract address first');
+                return;
+            }
+
+            const amount = document.getElementById('depositAmount').value;
+            
+            if (!amount || parseFloat(amount) <= 0) {
+                showError('Please enter a valid amount');
+                return;
+            }
+
+            try {
+                const amountWei = ethers.utils.parseEther(amount);
+                
+                showInfo('Depositing funds... Please confirm in MetaMask');
+                const tx = await signer.sendTransaction({
+                    to: contractAddress,
+                    value: amountWei
+                });
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess(`${amount} ETH deposited successfully!`);
+                document.getElementById('depositAmount').value = '';
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'depositing funds');
+            }
+        }
+
+        // Governance
+        async function updateQuorum() {
+            if (!contract) {
+                showError('Please connect wallet and set contract address first');
+                return;
+            }
+
+            const newQuorum = document.getElementById('newQuorum').value;
+            
+            if (!newQuorum || newQuorum < 0 || newQuorum > 100) {
+                showError('Please enter a valid quorum percentage (0-100)');
+                return;
+            }
+
+            try {
+                const quorumBps = newQuorum * 100; // Convert to basis points
+                
+                showInfo('Updating quorum... Please confirm in MetaMask');
+                const tx = await contract.setQuorumBps(quorumBps);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess(`Quorum updated to ${newQuorum}%`);
+                document.getElementById('newQuorum').value = '';
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'updating quorum');
+            }
+        }
+
+        async function transferOwnership() {
+            if (!contract) {
+                showError('Please connect wallet and set contract address first');
+                return;
+            }
+
+            const newOwner = document.getElementById('newOwnerAddress').value.trim();
+            
+            if (!newOwner || !ethers.utils.isAddress(newOwner)) {
+                showError('Please enter a valid Ethereum address');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to transfer ownership to ${shortenAddress(newOwner)}? This action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                showInfo('Transferring ownership... Please confirm in MetaMask');
+                const tx = await contract.transferOwnership(newOwner);
+                
+                showInfo('Transaction submitted, waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Ownership transferred successfully!');
+                document.getElementById('newOwnerAddress').value = '';
+                await refreshData();
+            } catch (error) {
+                handleContractError(error, 'transferring ownership');
+            }
+        }
+
+        // Error Handling
+        function handleContractError(error, action) {
+            if (error.code === 4001) {
+                showError('Transaction cancelled by user');
+                return;
+            }
+
+            const errorMessages = {
+                'NotMember': 'You must be a member to perform this action',
+                'AlreadyMember': 'This address is already a member',
+                'AlreadyVoted': 'You have already voted on this proposal',
+                'VotingPeriodEnded': 'The voting period has ended',
+                'ProposalNotAccepted': 'Proposal was not accepted (quorum or majority not met)',
+                'InsufficientBalance': 'Contract does not have enough funds',
+                'InvalidDeadline': 'Invalid deadline or voting period not yet ended',
+                'ZeroAddress': 'Cannot use zero address',
+                'InvalidAmount': 'Invalid amount specified',
+                'OwnableUnauthorizedAccount': 'Only the owner can perform this action'
+            };
+
+            for (const [key, message] of Object.entries(errorMessages)) {
+                if (error.message.includes(key)) {
+                    showError(message);
+                    return;
+                }
+            }
+
+            showError(`Error ${action}: ${error.reason || error.message}`);
+        }
+    </script>
+</body>
+</html>
